@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+from __future__ import print_function
+from getpass import getpass
+from os import remove as rm
+from os.path import basename, realpath
+import argparse
+import json
+import logging
+import sys
+
+from downloader import Downloader
+from gdata.service import BadAuthentication as GoogleDataBadAuthentication
+
+
+if __name__ == '__main__':
+    log = logging.getLogger(basename(sys.argv[0]))
+    parser = argparse.ArgumentParser()
+    choices_for_selected = [
+        'top_queries',
+        'top_pages',
+        'TOP_QUERIES',
+        'TOP_PAGES',
+    ]
+
+    parser.add_argument('-v', '--verbose',
+                        action='store_true')
+    parser.add_argument('-d', '--debug',
+                        action='store_true')
+    parser.add_argument('-S', '--selected',
+                        choices=choices_for_selected,
+                        default=choices_for_selected[0])
+    parser.add_argument('-u', '--user', required=True)
+    parser.add_argument('-p', '--password', default=None)
+    parser.add_argument('-w', '--website', required=True)
+    parser.add_argument('-l', '--limit-rows',
+                        type=int,
+                        default=None)
+
+    args = parser.parse_args()
+    args.selected = [args.selected.upper()]
+    args.verbose = True if args.debug else args.verbose
+
+    if args.verbose:
+        ch = logging.StreamHandler(sys.stderr)
+        log.setLevel(logging.DEBUG if args.debug else logging.INFO)
+        ch.setLevel(logging.DEBUG if args.debug else logging.INFO)
+        formatter = logging.Formatter('[%(asctime)s] %(levelname)s '
+                                      '[%(name)s:%(lineno)s] %(message)s')
+        ch.setFormatter(formatter)
+        log.addHandler(ch)
+
+    if args.password is None:
+        args.password = getpass()
+
+    # Allow just the domain
+    # Note `www.` is not presumed
+    if (not args.website.startswith('http://') and
+            not args.website.startswith('https://')):
+        log.info('Fixing website name, assuming "http://%s"' % (args.website,))
+        args.website = 'http://%s' % (args.website,)
+
+    log.debug(args)
+
+    log.info('Logging in with user %s' % (args.user,))
+    downloader = Downloader()
+    try:
+        downloader.LogIn(args.user, args.password)
+        log.info('Successful log in')
+    except GoogleDataBadAuthentication:
+        print('Unable to log in', file=sys.stderr)
+        sys.exit(1)
+
+    log.info('Beginning download for "%s" for site "%s"' % (
+        args.selected,
+        args.website,
+    ))
+    downloader.DoDownload(args.website, args.selected)
+
+    for fn in downloader.GetDownloadedFiles():
+        fn = realpath(fn.strip())
+        log.debug('Downloaded file: %s' % (fn,))
+        with open(fn) as f:
+            if args.limit_rows:
+                lines = f.read().strip().splitlines()[0:args.limit_rows + 1]
+                print('\n'.join(lines))
+            else:
+                print(f.read().strip())
+        log.debug('Removing file: %s' % (fn,))
+        rm(fn)

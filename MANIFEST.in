@@ -1,2 +1,2 @@
-include *.txt downloader.py
+include *.txt
 recursive-include *.txt

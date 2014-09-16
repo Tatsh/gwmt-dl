@@ -24,6 +24,7 @@ setup(
     description='Downloads Google WebMaster search queries and top pages data as CSV data.',
     long_description='Downloads Google WebMaster search queries and top pages data as CSV data.',
     scripts=['bin/gwmt-dl'],
+    packages=['gwmt'],
     install_requires=[
         'gdata>=2.0.18',
     ],

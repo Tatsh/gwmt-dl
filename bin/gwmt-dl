@@ -8,7 +8,7 @@ import json
 import logging
 import sys
 
-from downloader import Downloader
+from gwmt.downloader import Downloader
 from gdata.service import BadAuthentication as GoogleDataBadAuthentication
 
 

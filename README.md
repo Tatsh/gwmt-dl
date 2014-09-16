@@ -1,3 +1,9 @@
+# Installation
+
+```bash
+pip install gwmt-dl
+```
+
 # Usage
 
 ```
